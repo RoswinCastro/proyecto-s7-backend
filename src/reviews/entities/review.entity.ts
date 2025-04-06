@@ -10,15 +10,19 @@ export class ReviewEntity extends BaseEntity {
     () => UserEntity,
     (user) => user.reviews
   )
-  @JoinColumn({ name: 'userId' })
   user: UserEntity;
+
+  @Column({ type: 'uuid' }) // Define la columna userId
+  userId: string;
 
   @ManyToOne(
     () => BookEntity,
     (book) => book.reviews
   )
-  @JoinColumn({ name: 'bookId' })
   book: BookEntity;
+
+  @Column({ type: 'uuid' }) // Define la columna bookId
+  bookId: string;
 
   @Column({ type: 'int' })
   rating: number;

@@ -52,3 +52,6 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# Folders
+/src/migrations/
