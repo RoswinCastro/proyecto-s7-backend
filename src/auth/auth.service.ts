@@ -21,8 +21,8 @@ export class AuthService {
       const existingUser = await this.usersService.findOneByEmail(email)
       if (existingUser) {
         throw new ManagerError({
-          type: "BAD_REQUEST",
-          message: "User already exists!",
+          type: 'CONFLICT',
+          message: 'A user with this email already exists!',
         })
       }
 
