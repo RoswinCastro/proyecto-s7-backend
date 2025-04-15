@@ -4,6 +4,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { PublicAccess } from 'src/auth/decorators/public.decorator';
 
 @Controller('books')
 export class BooksController {
@@ -19,11 +20,13 @@ export class BooksController {
     return newBook;
   }
 
+  @PublicAccess()
   @Get()
-  findAll(@Query() paginationDto: PaginationDto) {
+  async findAll(@Query() paginationDto: PaginationDto) {
     return this.booksService.findAll(paginationDto);
   }
 
+  @PublicAccess()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.booksService.findOne(id);

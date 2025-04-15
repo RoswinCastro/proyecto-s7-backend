@@ -6,30 +6,30 @@ import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 
 @Controller('favorites')
 export class FavoritesController {
-  constructor(private readonly favoritesService: FavoritesService) {}
+  constructor(private readonly favoritesService: FavoritesService) { }
 
   @Post()
-  create(@Body() createFavoriteDto: CreateFavoriteDto) {
+  async create(@Body() createFavoriteDto: CreateFavoriteDto) {
     return this.favoritesService.create(createFavoriteDto);
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto) {
+  async findAll(@Query() paginationDto: PaginationDto) {
     return this.favoritesService.findAll(paginationDto);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.favoritesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFavoriteDto: UpdateFavoriteDto) {
+  async update(@Param('id') id: string, @Body() updateFavoriteDto: UpdateFavoriteDto) {
     return this.favoritesService.update(id, updateFavoriteDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.favoritesService.remove(id);
   }
 }

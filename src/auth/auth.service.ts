@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import { ManagerError } from './../common/errors/manager.error';
 import { OmitPassword } from 'src/common/types/users/omit-password.user';
 import { UserEntity } from 'src/users/entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,7 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) { }
 
-  async register(registerAuthDto: RegisterAuthDto): Promise<{ user: OmitPassword; token: string }> {
+  async register(registerAuthDto: RegisterAuthDto): Promise<{ user: OmitPassword; access_token: string }> {
     const { name, email, password } = registerAuthDto
     try {
       // Check if user already exists
@@ -26,78 +27,86 @@ export class AuthService {
         })
       }
 
-      // Create new user
+      //hash the password using bcrypt
+      const hashedPassword = await bcrypt.hash(password, 12)
+
+      // Create new user with hashed password
       const user = await this.usersService.create({
         name,
         email,
-        password,
+        password: hashedPassword,
       })
 
       const { password: _, ...rest } = user
 
-      const token = this.jwtService.sign(rest, {
+      const access_token = this.jwtService.sign(rest, {
         secret: process.env.JWT_SECRET,
       })
 
-      if (!token) {
+      if (!access_token) {
         throw new ManagerError({
           type: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
         })
       }
 
-      return { user: rest, token }
+      return { user: rest, access_token }
     } catch (error) {
       ManagerError.createSignatureError(error.message)
     }
   }
 
-  async login(loginAuthDto: LoginAuthDto): Promise<{ user: OmitPassword; token: string }> {
-    const { email, password } = loginAuthDto
+  async login(loginAuthDto: LoginAuthDto): Promise<{ user: OmitPassword; access_token: string }> {
+    const { email, password } = loginAuthDto;
     try {
-      const user = await this.usersService.findOneByEmail(email)
+      // Check if user exists
+      const user = await this.usersService.findOneByEmail(email);
       if (!user) {
         throw new ManagerError({
           type: "BAD_REQUEST",
           message: "User not found!",
-        })
-      } else if (user.password !== password) {
-        // In a real app, use bcrypt.compare here
-        throw new ManagerError({
-          type: "BAD_REQUEST",
-          message: "Credentials not valid!",
-        })
+        });
       }
+
+      //compare the provided password with the hashed password in the database
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new ManagerError({
+          type: 'BAD_REQUEST',
+          message: 'Credentials not valid!',
+        });
+      }
+
       const { password: destructuring, ...rest } = user
 
-      const token = this.jwtService.sign(rest, {
+      const access_token = this.jwtService.sign(rest, {
         secret: process.env.JWT_SECRET,
       })
-      if (!token) {
+      if (!access_token) {
         throw new ManagerError({
           type: "INTERNAL_SERVER_ERROR",
           message: "Internal server error",
         })
       }
-      return { user: rest, token }
+      return { user: rest, access_token }
     } catch (error) {
       ManagerError.createSignatureError(error.message)
     }
   }
 
-  async validateToken(token: string): Promise<UserEntity> {
-    try {
-      const decoded = this.jwtService.verify(token, { secret: process.env.JWT_SECRET })
-      const response = await this.usersService.findOne(decoded.id)
-      const user = response.data
+  // async validateToken(token: string): Promise<UserEntity> {
+  //   try {
+  //     const decoded = this.jwtService.verify(token, { secret: process.env.JWT_SECRET })
+  //     const response = await this.usersService.findOne(decoded.id)
+  //     const user = response.data
 
-      if (!user) {
-        throw new UnauthorizedException("Unauthorized")
-      }
+  //     if (!user) {
+  //       throw new UnauthorizedException("Unauthorized")
+  //     }
 
-      return user
-    } catch (error) {
-      throw new UnauthorizedException("Unauthorized")
-    }
-  }
+  //     return user
+  //   } catch (error) {
+  //     throw new UnauthorizedException("Unauthorized")
+  //   }
+  // }
 }

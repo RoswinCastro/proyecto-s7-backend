@@ -8,15 +8,18 @@ import { RoleGuard } from './guards/role.guard';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtService, AuthGuard, RoleGuard],
+  providers: [{
+    provide: 'APP_GUARD',
+    useClass: AuthGuard,
+  }, AuthService, JwtService, AuthGuard, RoleGuard],
   imports: [
     UsersModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '60s' },
+      signOptions: { expiresIn: '3600s' },
     }),
   ],
   exports: [AuthService, AuthGuard, RoleGuard],
 })
-export class AuthModule {}
+export class AuthModule { }

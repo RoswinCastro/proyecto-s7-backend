@@ -31,17 +31,4 @@ export class UserEntity extends BaseEntity {
   )
   favorites: FavoriteEntity[];
 
-  @BeforeInsert()
-  @BeforeUpdate()
-  async hashPassword() {
-    if (this.password) {
-      // Only hash the password if it's being set or updated
-      const salt = await bcrypt.genSalt()
-      this.password = await bcrypt.hash(this.password, salt)
-    }
-  }
-
-  async validatePassword(password: string): Promise<boolean> {
-    return bcrypt.compare(password, this.password)
-  }
 }

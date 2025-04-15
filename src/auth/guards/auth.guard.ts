@@ -6,6 +6,8 @@ import { UsersService } from '../../users/users.service';
 import { ManagerError } from './../../common/errors/manager.error';
 import { OneApiResponse } from '../../common/interfaces/response-api.interface';
 import { UserEntity } from './../../users/entities/user.entity';
+import { Reflector } from '@nestjs/core';
+import { PUBLIC_KEY } from 'src/common/constants/keys-roles.constant';
 
 const UNAUTHORIZED_ERROR = new ManagerError({
   type: "UNAUTHORIZED",
@@ -17,9 +19,18 @@ export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
+    private reflector: Reflector,
   ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>()
     const token = this.extractTokenFromHeader(request)
     if (!token) {

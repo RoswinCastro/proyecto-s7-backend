@@ -1,9 +1,9 @@
-import { Controller, Post, Body, BadRequestException, InternalServerErrorException, UnauthorizedException, Req, Get, Res } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, InternalServerErrorException, UnauthorizedException, Req, Get, Res, UseGuards } from '@nestjs/common';
+import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './auth.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request } from 'express';
-import { AuthGuard } from './guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -30,5 +30,11 @@ export class AuthController {
     }
     // return this.authService.validateToken(token);
     return this.authGuard.verifyToken(token);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('profile')
+  getProfile(@Req() req: Request) {
+    return req['user']
   }
 }
