@@ -11,6 +11,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AuthModule } from './auth/auth.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { MailerModule } from './mailer/mailer.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     FavoritesModule,
     AuthModule,
     CloudinaryModule,
+    MailerModule,
   ],
   controllers: [],
   providers: [],
