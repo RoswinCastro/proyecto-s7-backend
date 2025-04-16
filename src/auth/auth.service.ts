@@ -7,6 +7,7 @@ import { ManagerError } from './../common/errors/manager.error';
 import { OmitPassword } from 'src/common/types/users/omit-password.user';
 import { UserEntity } from 'src/users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -91,6 +92,38 @@ export class AuthService {
       return { user: rest, access_token }
     } catch (error) {
       ManagerError.createSignatureError(error.message)
+    }
+  }
+
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<{ message: string }> {
+    const { currentPassword, newPassword } = changePasswordDto;
+
+    try {
+      const response = await this.usersService.findOne(userId)
+      const user = response.data;
+
+      if (!user) {
+        throw new ManagerError({
+          type: "BAD_REQUEST",
+          message: "User not found!",
+        });
+      }
+
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isPasswordValid) {
+        throw new ManagerError({
+          type: 'BAD_REQUEST',
+          message: 'Current password is incorrect!',
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await this.usersService.update(userId, { password: hashedPassword });
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      ManagerError.createSignatureError(error.message);
     }
   }
 

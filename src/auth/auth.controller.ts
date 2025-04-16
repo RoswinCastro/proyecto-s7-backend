@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request } from 'express';
+import { PublicAccess } from './decorators/public.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -11,17 +13,19 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly authGuard: AuthGuard) { }
 
+  @PublicAccess()
   @Post('register')
   async register(@Body() registerAuthDto: RegisterAuthDto) {
     return this.authService.register(registerAuthDto);
   }
 
-
+  @PublicAccess()
   @Post('login')
   async login(@Body() loginAuthDto: LoginAuthDto) {
     return this.authService.login(loginAuthDto);
   }
 
+  @PublicAccess()
   @Post('verify')
   async verify(@Req() req: Request) {
     const token = req.cookies['token'];
@@ -37,4 +41,16 @@ export class AuthController {
   getProfile(@Req() req: Request) {
     return req['user']
   }
+
+  @UseGuards(AuthGuard)
+  @Post('change-password')
+  async changePassword(
+    @Req() req: Request,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(req['user'].id, changePasswordDto);
+  }
+
+
+
 }
