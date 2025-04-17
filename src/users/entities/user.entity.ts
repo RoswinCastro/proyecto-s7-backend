@@ -31,4 +31,10 @@ export class UserEntity extends BaseEntity {
   )
   favorites: FavoriteEntity[];
 
+  @Column({ nullable: true })
+  resetToken?: string;
+
+  @Column({ nullable: true })
+  resetTokenExpiry?: Date;
+
 }

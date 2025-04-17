@@ -5,6 +5,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { UsersModule } from './../users/users.module';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   controllers: [AuthController],
@@ -14,6 +15,7 @@ import { RoleGuard } from './guards/role.guard';
   }, AuthService, JwtService, AuthGuard, RoleGuard],
   imports: [
     UsersModule,
+    MailerModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,

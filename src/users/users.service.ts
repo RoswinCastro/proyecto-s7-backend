@@ -143,4 +143,18 @@ export class UsersService {
       ManagerError.createSignatureError(error.message);
     }
   }
+
+  async findOneByResetToken(token: string): Promise<UserEntity | undefined> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { resetToken: token },
+      });
+      return user;
+    } catch (error) {
+      throw new ManagerError({
+        type: 'INTERNAL_SERVER_ERROR',
+        message: error.message,
+      });
+    }
+  }
 }
