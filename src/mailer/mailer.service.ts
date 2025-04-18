@@ -17,7 +17,7 @@ export class MailerService {
         });
     }
 
-    async sendPasswordResetEmail(email: string, name: string, resetLink: string): Promise<void> {
+    async sendPasswordResetEmail(email: string, name: string, resetLink: string, resetToken: string): Promise<void> {
         await this.sendMail({
             to: email,
             subject: 'Recuperación de contraseña',
@@ -25,6 +25,7 @@ export class MailerService {
             context: {
                 name,
                 resetLink,
+                resetToken,
             },
         });
     }
