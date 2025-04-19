@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ManagerError } from 'src/common/errors/manager.error';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
+import { BooksService } from 'src/books/books.service';
 
 @Injectable()
 export class ReviewsService {
@@ -14,10 +15,26 @@ export class ReviewsService {
   constructor(
     @InjectRepository(ReviewEntity)
     private readonly reviewsRepository: Repository<ReviewEntity>,
+    private readonly booksService: BooksService,
   ) { }
 
   async create(createReviewDto: CreateReviewDto): Promise<ReviewEntity> {
     try {
+      const existingReview = await this.reviewsRepository.findOne({
+        where: {
+          userId: createReviewDto.userId,
+          bookId: createReviewDto.bookId,
+          isActive: true
+        }
+      });
+
+      if (existingReview) {
+        throw new ManagerError({
+          type: 'CONFLICT',
+          message: 'User has already reviewed this book!',
+        });
+      }
+
       const review = await this.reviewsRepository.save(createReviewDto);
       if (!review) {
         throw new ManagerError({
@@ -25,6 +42,9 @@ export class ReviewsService {
           message: 'review not created!'
         })
       }
+
+      await this.booksService.updateAverageRating(createReviewDto.bookId)
+
       return review;
     } catch (error) {
       ManagerError.createSignatureError(error.message);
