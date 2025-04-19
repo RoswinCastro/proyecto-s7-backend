@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class PaginationDto {
   @IsNumber()
@@ -8,4 +8,8 @@ export class PaginationDto {
   @IsNumber()
   @IsOptional()
   limit: number = 10;
+
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
