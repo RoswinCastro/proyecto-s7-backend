@@ -143,7 +143,7 @@ export class AuthService {
       }
 
       // Generate reset token and expiry time
-      const resetToken = Math.random().toString(36).substring(2, 12);
+      const resetToken = Math.random().toString(36).slice(2, 10).toUpperCase();
       const resetTokenExpiry = new Date(Date.now() + 3600000);
 
       await this.usersService.update(user.id, {
@@ -161,6 +161,7 @@ export class AuthService {
         context: {
           name: user.name,
           resetLink: resetUrl,
+          resetToken: resetToken,
         },
       });
 
