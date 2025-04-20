@@ -23,7 +23,6 @@ export class AuthService {
   async register(registerAuthDto: RegisterAuthDto): Promise<{ user: OmitPassword; access_token: string }> {
     const { name, email, password } = registerAuthDto
     try {
-      // Check if user already exists
       const existingUser = await this.usersService.findOneByEmail(email)
       if (existingUser) {
         throw new ManagerError({
@@ -32,10 +31,8 @@ export class AuthService {
         })
       }
 
-      //hash the password using bcrypt
       const hashedPassword = await bcrypt.hash(password, 12)
 
-      // Create new user with hashed password
       const user = await this.usersService.create({
         name,
         email,
@@ -137,6 +134,14 @@ export class AuthService {
     try {
       const { email } = forgotPasswordDto;
 
+      const { canRequest, message } = await this.usersService.canRequestPasswordReset(email);
+      if (!canRequest) {
+        throw new ManagerError({
+          type: 'TOO_MANY_REQUESTS',
+          message: message || 'Too many recovery attempts. Please wait before trying again'
+        });
+      }
+
       const user = await this.usersService.findOneByEmail(email);
       if (!user) {
         return { message: 'If an account with that email exists, a reset link has been sent' };
@@ -151,7 +156,8 @@ export class AuthService {
         resetTokenExpiry,
       })
 
-      // send email with reset link
+      await this.usersService.incrementResetPasswordAttempts(email);
+
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
       await this.mailerService.sendMail({

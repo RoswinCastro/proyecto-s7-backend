@@ -37,4 +37,10 @@ export class UserEntity extends BaseEntity {
   @Column({ nullable: true })
   resetTokenExpiry?: Date;
 
+  @Column({ default: 0 })
+  resetPasswordAttempts: number;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  lastResetPasswordAttempt?: Date;
+
 }

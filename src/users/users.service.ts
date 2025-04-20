@@ -151,10 +151,50 @@ export class UsersService {
       });
       return user;
     } catch (error) {
-      throw new ManagerError({
-        type: 'INTERNAL_SERVER_ERROR',
-        message: error.message,
-      });
+      ManagerError.createSignatureError(error.message);
     }
+  }
+
+  async canRequestPasswordReset(email: string): Promise<{ canRequest: boolean; message?: string }> {
+    const user = await this.userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      return { canRequest: true };
+    }
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 3600000);
+
+    if (!user.lastResetPasswordAttempt || user.lastResetPasswordAttempt < oneHourAgo) {
+      await this.userRepository.update(user.id, {
+        resetPasswordAttempts: 0,
+        lastResetPasswordAttempt: now
+      });
+      return { canRequest: true };
+    }
+
+    if (user.resetPasswordAttempts >= 3) {
+      const nextAttemptTime = new Date(user.lastResetPasswordAttempt.getTime() + 3600000);
+      const remainingMinutes = Math.ceil((nextAttemptTime.getTime() - now.getTime()) / 60000);
+
+      return {
+        canRequest: false,
+        message: `You have exceeded the attempt limit. Please wait ${remainingMinutes} minutes.`
+      };
+    }
+
+    return { canRequest: true };
+  }
+
+  async incrementResetPasswordAttempts(email: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update(UserEntity)
+      .set({
+        resetPasswordAttempts: () => "resetPasswordAttempts + 1",
+        lastResetPasswordAttempt: new Date()
+      })
+      .where("email = :email", { email })
+      .execute();
   }
 }
