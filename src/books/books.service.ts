@@ -19,10 +19,8 @@ export class BooksService {
 
   async create(createBookDto: CreateBookDto, file: Express.Multer.File): Promise<BookEntity> {
     try {
-      // Upload file PDF to Cloudinary
       const uploadedFile = await this.cloudinaryService.uploadFile(file)
 
-      // Create book with file URL
       const { author, editorial, gender, ...bookData } = createBookDto;
       const book = this.bookRepository.create({
         ...bookData,
@@ -163,7 +161,6 @@ export class BooksService {
     try {
       let updatedData = { ...updateBookDto };
 
-      // Upload file if provided
       if (file) {
         const uploadedFile = await this.cloudinaryService.uploadFile(file);
         updatedData = { ...updatedData, file: uploadedFile.secure_url };
@@ -238,25 +235,52 @@ export class BooksService {
     }
   }
 
-  async updateAverageRating(bookId: string): Promise<void> {
+  async updateAverageRating(id: string): Promise<void> {
     try {
-      // Get all active reviews for the book
       const book = await this.bookRepository
         .createQueryBuilder("book")
-        .where({ id: bookId, isActive: true })
+        .where({ id: id, isActive: true })
         .leftJoinAndSelect("book.reviews", "review", "review.isActive = :isActive", { isActive: true })
         .getOne()
 
       if (!book || !book.reviews || book.reviews.length === 0) {
-        return
+        throw new ManagerError({
+          type: "NOT_FOUND",
+          message: "Book not found!",
+        })
       }
 
-      // Calculate average rating
       const totalRating = book.reviews.reduce((sum, review) => sum + review.rating, 0)
       const averageRating = totalRating / book.reviews.length
 
-      // Update the book with the new average rating
-      await this.bookRepository.update(bookId, { averageRating })
+      await this.bookRepository.update(id, { averageRating })
+    } catch (error) {
+      ManagerError.createSignatureError(error.message)
+    }
+  }
+
+  async getDownloadUrl(id: string): Promise<{ status: any; data: string }> {
+    try {
+      await this.incrementDownloads(id);
+
+      const book = await this.bookRepository.findOne({ where: { id } });
+      if (!book || !book.file) {
+        throw new ManagerError({
+          type: 'NOT_FOUND',
+          message: 'Book not found!'
+        });
+      }
+
+      const downloadUrl = book.file.replace('/upload', `/upload/fl_attachment:${book.title.replace(/\s+/g, '_')}/`);
+
+      return {
+        status: {
+          statusMsg: "ACCEPTED",
+          statusCode: 200,
+          error: null,
+        },
+        data: downloadUrl,
+      }
     } catch (error) {
       ManagerError.createSignatureError(error.message)
     }

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PublicAccess } from 'src/auth/decorators/public.decorator';
+import { Response } from 'express';
 
 @Controller('books')
 export class BooksController {
@@ -46,8 +47,10 @@ export class BooksController {
     return this.booksService.remove(id);
   }
 
-  @Post(':id/download')
-  incrementDownloads(@Param('id') id: string) {
-    return this.booksService.incrementDownloads(id);
+  @PublicAccess()
+  @Get(':id/download')
+  async downloadBook(@Param('id') id: string, @Res() res: Response) {
+    const downloadUrl = await this.booksService.getDownloadUrl(id);
+    res.redirect(downloadUrl.data)
   }
 }
