@@ -8,40 +8,42 @@ import { ManagerError } from './../../common/errors/manager.error';
 @Injectable()
 export class RoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) { }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>()
-    const isAdmin = this.reflector.get<string>(ADMIN_KEY, context.getHandler())
-    const isPublic = this.reflector.get<boolean>(PUBLIC_KEY, context.getHandler())
-    const isRoles = this.reflector.get<Array<keyof typeof UserRole>>(ROLES_KEY, context.getHandler())
+    const request = context.switchToHttp().getRequest<Request>();
+    const isAdmin = this.reflector.get<string>(ADMIN_KEY, context.getHandler());
+    const isPublic = this.reflector.get<boolean>(PUBLIC_KEY, context.getHandler());
+    const isRoles = this.reflector.get<Array<keyof typeof UserRole>>(ROLES_KEY, context.getHandler());
+
     const UNAUTHORIZED_ERROR = new ManagerError({
       type: "UNAUTHORIZED",
       message: "Unauthorized!",
-    })
+    });
 
-    const user = request["user"]
+    const user = request.user as { id: string; role: UserRole }; // Tipo explícito
 
-    if (isPublic) return true
+    if (isPublic) return true;
 
     try {
       if (isRoles === undefined) {
-        if (!isAdmin || user.role === isAdmin) {
-          return true
+        if (!isAdmin || user?.role === isAdmin) { // Verificación segura
+          return true;
         }
-        throw UNAUTHORIZED_ERROR
+        throw UNAUTHORIZED_ERROR;
       }
 
-      if (user.role === UserRole.ADMIN) {
-        return true
+      if (user?.role === UserRole.ADMIN) { // Verificación segura
+        return true;
       }
 
-      const isAuth = isRoles.includes(user.role)
+      const isAuth = isRoles.includes(user?.role); // Verificación segura
       if (!isAuth) {
-        throw UNAUTHORIZED_ERROR
+        throw UNAUTHORIZED_ERROR;
       }
 
-      return true
+      return true;
     } catch (error) {
-      ManagerError.createSignatureError(error.message)
+      ManagerError.createSignatureError(error.message);
     }
   }
 }

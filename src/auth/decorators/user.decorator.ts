@@ -1,5 +1,9 @@
-import { SetMetadata } from '@nestjs/common';
-import { USER_KEY } from 'src/common/constants/keys-roles.constant';
-import { UserRole } from 'src/common/enums/user-role.enum';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { OmitPassword } from '../../common/types/users/omit-password.user';
 
-export const UserAccess = () => SetMetadata(USER_KEY, UserRole.USER);
+export const CurrentUser = createParamDecorator(
+    (data: unknown, ctx: ExecutionContext): OmitPassword => {
+        const request = ctx.switchToHttp().getRequest();
+        return request.user;
+    },
+);

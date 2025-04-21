@@ -51,7 +51,6 @@ export class AuthService {
   async login(loginAuthDto: LoginAuthDto): Promise<{ user: OmitPassword; access_token: string }> {
     const { email, password } = loginAuthDto;
     try {
-      // Check if user exists
       const user = await this.usersService.findOneByEmail(email);
       if (!user) {
         throw new ManagerError({
@@ -60,7 +59,6 @@ export class AuthService {
         });
       }
 
-      //compare the provided password with the hashed password in the database
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         throw new ManagerError({
@@ -193,6 +191,52 @@ export class AuthService {
     }
   }
 
+  async validateUser(email: string, password: string): Promise<OmitPassword | null> {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) return null;
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) return null;
+
+    const { password: _, ...userData } = user;
+    return userData;
+  }
+
+  async verifyToken(token: string): Promise<OmitPassword> {
+    try {
+      const payload = await this.jwtService.verifyAsync<OmitPassword>(token, {
+        secret: process.env.JWT_SECRET,
+      });
+
+      const user = await this.validateUserById(payload.id);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token expired');
+      }
+      if (error.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Invalid token');
+      }
+      throw new UnauthorizedException('Authentication failed');
+    }
+  }
+
+  async validateUserById(userId: string): Promise<OmitPassword | null> {
+    try {
+      const response = await this.usersService.findOne(userId);
+      if (!response.data) {
+        return null;
+      }
+      const { password, ...userWithoutPassword } = response.data;
+      return userWithoutPassword;
+    } catch (error) {
+      return null;
+    }
+  }
 
   // async validateToken(token: string): Promise<UserEntity> {
   //   try {

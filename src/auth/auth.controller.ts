@@ -1,5 +1,4 @@
-import { Controller, Post, Body, BadRequestException, InternalServerErrorException, UnauthorizedException, Req, Get, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { AuthGuard } from './guards/auth.guard';
+import { Controller, Post, Body, UnauthorizedException, Req, Get, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
@@ -9,12 +8,14 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/user.decorator';
+import { OmitPassword } from '../common/types/users/omit-password.user';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly authGuard: AuthGuard) { }
+  constructor(private readonly authService: AuthService) { }
 
   @PublicAccess()
   @Post('register')
@@ -27,6 +28,7 @@ export class AuthController {
   }
 
   @PublicAccess()
+  @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Body() loginAuthDto: LoginAuthDto) {
     return this.authService.login(loginAuthDto);
@@ -35,27 +37,26 @@ export class AuthController {
   @PublicAccess()
   @Post('verify')
   async verify(@Req() req: Request) {
-    const token = req.cookies['token'];
+    const token = req.cookies['token'] || req.headers.authorization?.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('Unauthorized');
     }
-    // return this.authService.validateToken(token);
-    return this.authGuard.verifyToken(token);
+    return this.authService.verifyToken(token);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req: Request) {
-    return req['user']
+  getProfile(@CurrentUser() user: OmitPassword) {
+    return user;
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(
-    @Req() req: Request,
+    @CurrentUser() user: OmitPassword,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return this.authService.changePassword(req['user'].id, changePasswordDto);
+    return this.authService.changePassword(user.id, changePasswordDto);
   }
 
   @PublicAccess()
@@ -69,5 +70,4 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
   }
-
 }
