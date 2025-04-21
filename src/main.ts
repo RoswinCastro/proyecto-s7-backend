@@ -1,26 +1,23 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import * as morgan from 'morgan';
-import * as cors from 'cors'
-import { ConfigService } from '@nestjs/config';
-import * as cookieParser from 'cookie-parser';
+import { NestFactory } from '@nestjs/core'
+import { AppModule } from './app.module'
+import { Logger, ValidationPipe } from '@nestjs/common'
+import * as morgan from 'morgan'
+import { ConfigService } from '@nestjs/config'
+import * as cookieParser from 'cookie-parser'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.use(cors({
-    origin: 'http://localhost:5173',
+  const app = await NestFactory.create(AppModule)
+  const configService = app.get(ConfigService)
+
+  app.enableCors({
+    origin: 'http://localhost:3001',
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
 
-  app.use(cookieParser());
-
-  app.use(morgan('dev'));
-
-  const logger = new Logger('Main');
-  const configService = new ConfigService();
+  app.use(cookieParser())
+  app.use(morgan('dev'))
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -30,11 +27,14 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-    }),
-  );
+    })
+  )
 
-  await app.listen(configService.get('PORT'));
+  const port = configService.get<number>('PORT') || 3000
+  await app.listen(port)
 
-  logger.log(`Server running on ${await app.getUrl()}`);
+  const logger = new Logger('Main')
+  logger.log(`Server running on ${await app.getUrl()}`)
 }
-bootstrap();
+
+bootstrap()
