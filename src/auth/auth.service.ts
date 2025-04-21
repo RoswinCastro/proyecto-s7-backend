@@ -20,24 +20,14 @@ export class AuthService {
     private readonly mailerService: MailerService,
   ) { }
 
-  async register(registerAuthDto: RegisterAuthDto): Promise<{ user: OmitPassword; access_token: string }> {
+  async register(registerAuthDto: RegisterAuthDto, file?: Express.Multer.File): Promise<{ user: OmitPassword; access_token: string }> {
     const { name, email, password } = registerAuthDto
     try {
-      const existingUser = await this.usersService.findOneByEmail(email)
-      if (existingUser) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'A user with this email already exists!',
-        })
-      }
 
-      const hashedPassword = await bcrypt.hash(password, 12)
-
-      const user = await this.usersService.create({
-        name,
-        email,
-        password: hashedPassword,
-      })
+      const user = await this.usersService.create(
+        { name, email, password },
+        file
+      );
 
       const { password: _, ...rest } = user
 

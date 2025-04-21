@@ -7,17 +7,19 @@ import { Repository, UpdateResult } from 'typeorm';
 import { ManagerError } from 'src/common/errors/manager.error';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async create(createUserDto: CreateUserDto): Promise<UserEntity> {
+  async create(createUserDto: CreateUserDto, file?: Express.Multer.File): Promise<UserEntity> {
     try {
-      // Check if user already exists
       const existingUser = await this.findOneByEmail(createUserDto.email);
       if (existingUser) {
         throw new ManagerError({
@@ -26,8 +28,13 @@ export class UsersService {
         })
       }
 
-      // Create new user
-      const user = await this.userRepository.save(createUserDto);
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 12)
+
+      const profilePhoto = await this.cloudinaryService.uploadProfilePhoto(file)
+
+      const userData = { ...createUserDto, password: hashedPassword, profilePhoto };
+
+      const user = await this.userRepository.save(userData);
       if (!user) {
         throw new ManagerError({
           type: 'CONFLICT',
@@ -196,5 +203,32 @@ export class UsersService {
       })
       .where("email = :email", { email })
       .execute();
+  }
+
+  async updateProfilePhoto(userId: string, file: Express.Multer.File): Promise<UserEntity> {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new Error('User not found!');
+      }
+
+      if (user.profilePhoto) {
+        const publicId = this.extractPublicId(user.profilePhoto);
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+
+      const uploadResult = await this.cloudinaryService.uploadProfilePhoto(file);
+
+      user.profilePhoto = uploadResult;
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw new Error(`Failed to update profile photo: ${error.message}`);
+    }
+  }
+
+  private extractPublicId(photoUrl: string): string {
+    const parts = photoUrl.split('/');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.split('.')[0];
   }
 }

@@ -43,4 +43,7 @@ export class UserEntity extends BaseEntity {
   @Column({ nullable: true, type: 'timestamp' })
   lastResetPasswordAttempt?: Date;
 
+  @Column({ nullable: true })
+  profilePhoto: string;
+
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException, InternalServerErrorException, UnauthorizedException, Req, Get, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, InternalServerErrorException, UnauthorizedException, Req, Get, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './auth.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
@@ -8,6 +8,7 @@ import { PublicAccess } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('auth')
 export class AuthController {
@@ -17,8 +18,12 @@ export class AuthController {
 
   @PublicAccess()
   @Post('register')
-  async register(@Body() registerAuthDto: RegisterAuthDto) {
-    return this.authService.register(registerAuthDto);
+  @UseInterceptors(FileInterceptor('profilePhoto'))
+  async register(
+    @Body() registerAuthDto: RegisterAuthDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return await this.authService.register(registerAuthDto, file);
   }
 
   @PublicAccess()

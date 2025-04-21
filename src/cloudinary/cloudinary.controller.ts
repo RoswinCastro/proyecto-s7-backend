@@ -12,4 +12,11 @@ export class CloudinaryController {
         const result = await this.cloudinaryService.uploadFile(file);
         return result;
     }
+
+    @Post('uploadProfilePhoto')
+    @UseInterceptors(FileInterceptor('profilePhoto'))
+    async uploadProfilePhoto(@UploadedFile() file: Express.Multer.File) {
+        const result = await this.cloudinaryService.uploadProfilePhoto(file);
+        return result;
+    }
 }
