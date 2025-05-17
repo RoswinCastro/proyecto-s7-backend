@@ -1,8 +1,7 @@
-import * as bcrypt from 'bcrypt';
 import { ReviewEntity } from "./../../reviews/entities/review.entity";
 import { BaseEntity } from "./../../common/config/base.entity";
 import { UserRole } from "./../../common/enums/user-role.enum";
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany } from "typeorm";
+import { Column, Entity, OneToMany } from "typeorm";
 import { FavoriteEntity } from "./../../favorites/entities/favorite.entity";
 
 @Entity({ name: 'user' })

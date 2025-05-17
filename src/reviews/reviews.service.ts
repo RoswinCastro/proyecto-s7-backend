@@ -1,150 +1,88 @@
-import { Injectable } from '@nestjs/common';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
-import { Repository, UpdateResult } from 'typeorm';
-import { ReviewEntity } from './entities/review.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ManagerError } from 'src/common/errors/manager.error';
-import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
-import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
-import { BooksService } from 'src/books/books.service';
+// src/reviews/reviews.service.ts
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { ReviewEntity } from './entities/review.entity'
+import { CreateReviewDto } from './dto/create-review.dto'
+import { UpdateReviewDto } from './dto/update-review.dto'
+import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto'
+import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface'
+import { BooksService } from 'src/books/books.service'
 
 @Injectable()
 export class ReviewsService {
-
   constructor(
     @InjectRepository(ReviewEntity)
     private readonly reviewsRepository: Repository<ReviewEntity>,
     private readonly booksService: BooksService,
   ) { }
 
-  async create(createReviewDto: CreateReviewDto): Promise<ReviewEntity> {
-    try {
-      const existingReview = await this.reviewsRepository.findOne({
-        where: {
-          userId: createReviewDto.userId,
-          bookId: createReviewDto.bookId,
-          isActive: true
-        }
-      });
-
-      if (existingReview) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'User has already reviewed this book!',
-        });
-      }
-
-      const review = await this.reviewsRepository.save(createReviewDto);
-      if (!review) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'review not created!'
-        })
-      }
-
-      await this.booksService.updateAverageRating(createReviewDto.bookId)
-
-      return review;
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
+  async create(dto: CreateReviewDto): Promise<ReviewEntity> {
+    const existing = await this.reviewsRepository.findOne({
+      where: { userId: dto.userId, bookId: dto.bookId, isActive: true }
+    })
+    if (existing) {
+      existing.rating = dto.rating
+      existing.comment = dto.comment
+      const updated = await this.reviewsRepository.save(existing)
+      await this.booksService.updateAverageRating(dto.bookId)
+      return updated
     }
+    const review = this.reviewsRepository.create(dto)
+    const saved = await this.reviewsRepository.save(review)
+    await this.booksService.updateAverageRating(dto.bookId)
+    return saved
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<AllApiResponse<ReviewEntity>> {
-    const { limit, page } = paginationDto;
-    const skip = (page - 1) * limit;
-    try {
-      const [total, data] = await Promise.all([
-        this.reviewsRepository.count({ where: { isActive: true } }),
-        this.reviewsRepository
-          .createQueryBuilder('review')
-          .where({ isActive: true })
-          .leftJoinAndSelect('review.user', 'user')
-          .leftJoinAndSelect('review.book', 'book')
-          .take(limit)
-          .skip(skip)
-          .getMany(),
-      ])
+  async findAll(p: PaginationDto): Promise<AllApiResponse<ReviewEntity>> {
+    const { page, limit, bookId } = p
+    const skip = (page - 1) * limit
+    const qb = this.reviewsRepository
+      .createQueryBuilder('review')
+      .where('review.isActive = :active', { active: true })
 
-      const lastPage = Math.ceil(total / limit);
-      return {
-        status: {
-          statusMsg: 'ACCEPTED',
-          statusCode: 200,
-          error: null
-        },
-        meta: {
-          page,
-          limit,
-          lastPage,
-          total,
-        },
-        data
-      }
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
+    if (bookId) {
+      qb.andWhere('review.bookId = :bookId', { bookId })
+    }
+
+    const [total, data] = await Promise.all([
+      qb.getCount(),
+      qb
+        .leftJoinAndSelect('review.user', 'user')
+        .leftJoinAndSelect('review.book', 'book')
+        .take(limit)
+        .skip(skip)
+        .getMany(),
+    ])
+
+    const lastPage = Math.ceil(total / limit)
+    return {
+      status: { statusMsg: 'ACCEPTED', statusCode: 200, error: null },
+      meta: { page, limit, lastPage, total },
+      data,
     }
   }
-
 
   async findOne(id: string): Promise<OneApiResponse<ReviewEntity>> {
-    try {
-      const review = await this.reviewsRepository
-        .createQueryBuilder('review')
-        .where({ id, isActive: true })
-        .getOne();
-
-
-      if (!review) {
-        throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'review not found!'
-        })
-      }
-
-      return {
-        status: {
-          statusMsg: 'ACCEPTED',
-          statusCode: 200,
-          error: null
-        },
-        data: review
-      }
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
+    const review = await this.reviewsRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['user', 'book']
+    })
+    return {
+      status: { statusMsg: 'ACCEPTED', statusCode: 200, error: null },
+      data: review,
     }
   }
 
-  async update(id: string, updateReviewDto: UpdateReviewDto): Promise<UpdateResult> {
-    try {
-      const review = await this.reviewsRepository.update({ id }, updateReviewDto)
-      if (review.affected === 0) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'review not found!'
-        })
-      }
-      return review;
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
-    }
+  async update(id: string, dto: UpdateReviewDto): Promise<ReviewEntity> {
+    await this.reviewsRepository.update({ id }, dto)
+    return await this.reviewsRepository.findOne({
+      where: { id },
+      relations: ['user', 'book']
+    })
   }
 
-  async remove(id: string): Promise<UpdateResult> {
-    try {
-      const review = await this.reviewsRepository.update({ id }, { isActive: false });
-      if (review.affected === 0) {
-        throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'review not found!'
-        })
-      }
-      return review;
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
-    }
+  async remove(id: string): Promise<void> {
+    await this.reviewsRepository.update({ id }, { isActive: false })
   }
-
-
 }

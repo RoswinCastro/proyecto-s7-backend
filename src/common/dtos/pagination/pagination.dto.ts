@@ -1,4 +1,5 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+// src/common/dtos/pagination/pagination.dto.ts
+import { IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 export class PaginationDto {
   @IsNumber()
@@ -12,4 +13,14 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @IsOptional()
+  @IsUUID()
+  bookId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  minRating?: number;
 }
