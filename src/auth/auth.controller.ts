@@ -37,7 +37,7 @@ export class AuthController {
   @PublicAccess()
   @Post('verify')
   async verify(@Req() req: Request) {
-    const token = req.cookies['token'] || req.headers.authorization?.split(' ')[1];
+    const token = req.cookies['access-token'] || req.headers.authorization?.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('Unauthorized');
     }

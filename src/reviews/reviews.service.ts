@@ -29,14 +29,17 @@ export class ReviewsService {
       });
 
       if (existingReview) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'User has already reviewed this book!',
-        });
+        existingReview.rating = createReviewDto.rating;
+        existingReview.comment = createReviewDto.comment;
+        const updateReview = await this.reviewsRepository.save(existingReview);
+        await this.booksService.updateAverageRating(createReviewDto.bookId)
+        return updateReview;
       }
 
-      const review = await this.reviewsRepository.save(createReviewDto);
-      if (!review) {
+      const review = this.reviewsRepository.create(createReviewDto);
+      const savedReview = await this.reviewsRepository.save(review);
+
+      if (!savedReview) {
         throw new ManagerError({
           type: 'CONFLICT',
           message: 'review not created!'
@@ -45,21 +48,27 @@ export class ReviewsService {
 
       await this.booksService.updateAverageRating(createReviewDto.bookId)
 
-      return review;
+      return savedReview;
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }
   }
 
   async findAll(paginationDto: PaginationDto): Promise<AllApiResponse<ReviewEntity>> {
-    const { limit, page } = paginationDto;
+    const { limit, page, bookId } = paginationDto;
     const skip = (page - 1) * limit;
     try {
+      const query = this.reviewsRepository
+        .createQueryBuilder('review')
+        .where('review.isActive = :isActive', { isActive: true })
+
+      if (bookId) {
+        query.andWhere('review.bookId = :bookId', { bookId });
+      }
+
       const [total, data] = await Promise.all([
-        this.reviewsRepository.count({ where: { isActive: true } }),
-        this.reviewsRepository
-          .createQueryBuilder('review')
-          .where({ isActive: true })
+        query.getCount(),
+        query
           .leftJoinAndSelect('review.user', 'user')
           .leftJoinAndSelect('review.book', 'book')
           .take(limit)
@@ -90,11 +99,10 @@ export class ReviewsService {
 
   async findOne(id: string): Promise<OneApiResponse<ReviewEntity>> {
     try {
-      const review = await this.reviewsRepository
-        .createQueryBuilder('review')
-        .where({ id, isActive: true })
-        .getOne();
-
+      const review = await this.reviewsRepository.findOne({
+        where: { id, isActive: true },
+        relations: ['user', 'book']
+      });
 
       if (!review) {
         throw new ManagerError({
@@ -116,7 +124,7 @@ export class ReviewsService {
     }
   }
 
-  async update(id: string, updateReviewDto: UpdateReviewDto): Promise<UpdateResult> {
+  async update(id: string, updateReviewDto: UpdateReviewDto): Promise<ReviewEntity> {
     try {
       const review = await this.reviewsRepository.update({ id }, updateReviewDto)
       if (review.affected === 0) {
@@ -125,7 +133,13 @@ export class ReviewsService {
           message: 'review not found!'
         })
       }
-      return review;
+
+      const updatedReview = await this.reviewsRepository.findOne({
+        where: { id, isActive: true },
+        relations: ['user', 'book']
+      });
+
+      return updatedReview;
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }
