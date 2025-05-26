@@ -4,7 +4,7 @@ import { UploadApiErrorResponse, UploadApiResponse, v2 as cloudinary } from 'clo
 
 @Injectable()
 export class CloudinaryService {
-    private readonly defaultProfilePhoto = 'https://res.cloudinary.com/dpcg87uv0/image/upload/v1745206740/profile_photos/ekchd8fedtuasbspjj2e.jpg'
+    private readonly defaultAvatarPhoto = 'https://res.cloudinary.com/dpcg87uv0/image/upload/v1745206740/profile_photos/ekchd8fedtuasbspjj2e.jpg'
 
     constructor(@Inject('CLOUDINARY') private cloudinary) { }
 
@@ -22,12 +22,28 @@ export class CloudinaryService {
 
     async uploadProfilePhoto(file: Express.Multer.File): Promise<string> {
         if (!file) {
-            return this.defaultProfilePhoto
+            return this.defaultAvatarPhoto
         }
 
         return new Promise((resolve, reject) => {
             this.cloudinary.uploader.upload_stream(
                 { resource_type: 'image', folder: 'profile_photos', format: 'jpg' },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result.secure_url);
+                },
+            ).end(file.buffer);
+        });
+    }
+
+    async uploadAuthorPhoto(file: Express.Multer.File): Promise<string> {
+        if (!file) {
+            return this.defaultAvatarPhoto
+        }
+
+        return new Promise((resolve, reject) => {
+            this.cloudinary.uploader.upload_stream(
+                { resource_type: 'image', folder: 'authors_photos', format: 'jpg' },
                 (error, result) => {
                     if (error) return reject(error);
                     resolve(result.secure_url);
