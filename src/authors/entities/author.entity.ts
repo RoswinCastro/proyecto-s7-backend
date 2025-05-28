@@ -15,5 +15,8 @@ export class AuthorEntity extends BaseEntity {
     (book) => book.author
   )
   books: BookEntity[];
+
+  @Column({ nullable: true })
+  photo: string;
 }
 

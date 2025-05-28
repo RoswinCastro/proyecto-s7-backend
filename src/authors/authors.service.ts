@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ManagerError } from 'src/common/errors/manager.error';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class AuthorsService {
@@ -14,11 +15,16 @@ export class AuthorsService {
   constructor(
     @InjectRepository(AuthorEntity)
     private readonly authorsRepository: Repository<AuthorEntity>,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async create(createAuthorDto: CreateAuthorDto): Promise<AuthorEntity> {
+  async create(createAuthorDto: CreateAuthorDto, file?: Express.Multer.File): Promise<AuthorEntity> {
     try {
-      const author = await this.authorsRepository.save(createAuthorDto);
+      const photo = await this.cloudinaryService.uploadAuthorPhoto(file);
+
+      const authorData = { ...createAuthorDto, photo }
+
+      const author = await this.authorsRepository.save(authorData);
       if (!author) {
         throw new ManagerError({
           type: 'CONFLICT',
@@ -117,6 +123,36 @@ export class AuthorsService {
         })
       }
       return author;
+    } catch (error) {
+      ManagerError.createSignatureError(error.message);
+    }
+  }
+
+  private extractPublicId(photoUrl: string): string {
+    const parts = photoUrl.split('/');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.split('.')[0];
+  }
+
+  async updatePhoto(id: string, file: Express.Multer.File): Promise<AuthorEntity> {
+    try {
+      const author = await this.authorsRepository.findOne({ where: { id } });
+      if (!author) {
+        throw new ManagerError({
+          type: 'NOT_FOUND',
+          message: 'author not found!'
+        })
+      }
+
+      if (author.photo) {
+        const publicId = this.extractPublicId(author.photo);
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+
+      const uploadResult = await this.cloudinaryService.uploadProfilePhoto(file);
+
+      author.photo = uploadResult;
+      return await this.authorsRepository.save(author);
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }

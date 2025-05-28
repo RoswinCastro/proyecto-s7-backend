@@ -8,4 +8,8 @@ export class CreateAuthorDto {
     @IsString()
     @IsOptional()
     biography?: string;
+
+    @IsString()
+    @IsOptional()
+    photo?: string
 }

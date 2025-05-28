@@ -205,9 +205,9 @@ export class UsersService {
       .execute();
   }
 
-  async updateProfilePhoto(userId: string, file: Express.Multer.File): Promise<UserEntity> {
+  async updateProfilePhoto(id: string, file: Express.Multer.File): Promise<UserEntity> {
     try {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
+      const user = await this.userRepository.findOne({ where: { id } });
       if (!user) {
         throw new Error('User not found!');
       }
