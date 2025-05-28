@@ -1,11 +1,8 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+// create-favorite.dto.ts
+import { IsNotEmpty, IsString } from 'class-validator'
 
 export class CreateFavoriteDto {
   @IsString()
   @IsNotEmpty()
-  bookId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
+  bookId: string
 }

@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { DeepPartial, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { FavoriteEntity } from './entities/favorite.entity';
-import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { UpdateFavoriteDto } from './dto/update-favorite.dto';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
 import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
@@ -15,84 +14,68 @@ export class FavoritesService {
     private readonly favoritesRepository: Repository<FavoriteEntity>,
   ) { }
 
-  async create(createFavoriteDto: CreateFavoriteDto): Promise<FavoriteEntity> {
+  async create(bookId: string, userId: string): Promise<FavoriteEntity> {
     try {
-      // Crea una nueva instancia de FavoriteEntity
-      const favorite = this.favoritesRepository.create({
-        book: { id: createFavoriteDto.bookId }, // Asigna la relación con el libro
-        user: { id: createFavoriteDto.userId }, // Asigna la relación con el usuario
+      const exists = await this.favoritesRepository.findOne({
+        where: { book: { id: bookId }, user: { id: userId }, isActive: true }
       });
 
-      // Guarda la entidad en la base de datos
-      const savedFavorite = await this.favoritesRepository.save(favorite);
+      if (exists) return exists;
 
-      if (!savedFavorite) {
-        throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'favorite not created!',
-        });
-      }
+      const favorite = this.favoritesRepository.create({
+        book: { id: bookId },
+        user: { id: userId },
+      });
 
-      return savedFavorite;
+      return await this.favoritesRepository.save(favorite);
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<AllApiResponse<FavoriteEntity>> {
+  async findAll(userId: string, paginationDto: PaginationDto): Promise<AllApiResponse<FavoriteEntity>> {
     const { limit, page } = paginationDto;
     const skip = (page - 1) * limit;
+
     try {
       const [total, data] = await Promise.all([
-        this.favoritesRepository.count({ where: { isActive: true } }),
+        this.favoritesRepository.count({ where: { isActive: true, user: { id: userId } } }),
         this.favoritesRepository.find({
-          where: { isActive: true },
-          relations: ['book', 'user'], // Carga las relaciones
+          where: { isActive: true, user: { id: userId } },
+          relations: ['book'],
           take: limit,
-          skip: skip,
+          skip,
         }),
-      ]);
+      ])
 
-      const lastPage = Math.ceil(total / limit);
       return {
         status: {
           statusMsg: 'ACCEPTED',
           statusCode: 200,
           error: null,
         },
-        meta: {
-          page,
-          limit,
-          lastPage,
-          total,
-        },
+        meta: { page, limit, lastPage: Math.ceil(total / limit), total },
         data,
       };
     } catch (error) {
-      ManagerError.createSignatureError(error.message);
+      ManagerError.createSignatureError(error.message)
     }
   }
+
 
   async findOne(id: string): Promise<OneApiResponse<FavoriteEntity>> {
     try {
       const favorite = await this.favoritesRepository.findOne({
         where: { id, isActive: true },
-        relations: ['book', 'user'], // Carga las relaciones
+        relations: ['book', 'user'],
       });
 
       if (!favorite) {
-        throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'favorite not found!',
-        });
+        throw new ManagerError({ type: 'NOT_FOUND', message: 'favorite not found!' });
       }
 
       return {
-        status: {
-          statusMsg: 'ACCEPTED',
-          statusCode: 200,
-          error: null,
-        },
+        status: { statusMsg: 'ACCEPTED', statusCode: 200, error: null },
         data: favorite,
       };
     } catch (error) {
@@ -100,17 +83,14 @@ export class FavoritesService {
     }
   }
 
-  async update(id: string, updateFavoriteDto: UpdateFavoriteDto): Promise<FavoriteEntity> {
+  async update(id: string, dto: UpdateFavoriteDto): Promise<FavoriteEntity> {
     try {
-      await this.favoritesRepository.update(id, updateFavoriteDto as DeepPartial<FavoriteEntity>);
-      const updatedFavorite = await this.favoritesRepository.findOne({ where: { id } });
-      if (!updatedFavorite) {
-        throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'favorite not found!',
-        });
+      await this.favoritesRepository.update(id, dto as DeepPartial<FavoriteEntity>);
+      const updated = await this.favoritesRepository.findOne({ where: { id } });
+      if (!updated) {
+        throw new ManagerError({ type: 'NOT_FOUND', message: 'favorite not found!' });
       }
-      return updatedFavorite;
+      return updated;
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }
@@ -120,10 +100,7 @@ export class FavoritesService {
     try {
       const result = await this.favoritesRepository.update(id, { isActive: false });
       if (result.affected === 0) {
-        throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'favorite not found!',
-        });
+        throw new ManagerError({ type: 'NOT_FOUND', message: 'favorite not found!' });
       }
     } catch (error) {
       ManagerError.createSignatureError(error.message);
