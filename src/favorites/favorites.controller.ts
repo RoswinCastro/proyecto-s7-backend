@@ -1,22 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, } from '@nestjs/common';
 import { FavoritesService } from './favorites.service';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { UpdateFavoriteDto } from './dto/update-favorite.dto';
 import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
+import { Req } from '@nestjs/common'
+import { Request } from 'express'
 
 @Controller('favorites')
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) { }
 
   @Post()
-  async create(@Body() createFavoriteDto: CreateFavoriteDto) {
-    return this.favoritesService.create(createFavoriteDto);
+  async create(@Req() req: Request, @Body() createFavoriteDto: CreateFavoriteDto) {
+    const user = req.user as any  // req.user viene del token
+    return this.favoritesService.create(user.id, createFavoriteDto)
   }
 
   @Get()
-  async findAll(@Query() paginationDto: PaginationDto) {
-    return this.favoritesService.findAll(paginationDto);
+
+  async findAll(@Req() req: Request, @Query() paginationDto: PaginationDto) {
+    const user = req.user as any; // o la forma como obtienes el usuario desde el JWT
+    return this.favoritesService.findAll(user.id, paginationDto);
   }
+
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
