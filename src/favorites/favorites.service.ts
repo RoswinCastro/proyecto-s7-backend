@@ -15,21 +15,19 @@ export class FavoritesService {
     private readonly favoritesRepository: Repository<FavoriteEntity>,
   ) { }
 
-  async create(createFavoriteDto: CreateFavoriteDto): Promise<FavoriteEntity> {
+  async create(userId: string, createFavoriteDto: CreateFavoriteDto): Promise<FavoriteEntity> {
     try {
-      // Crea una nueva instancia de FavoriteEntity
       const favorite = this.favoritesRepository.create({
-        book: { id: createFavoriteDto.bookId }, // Asigna la relación con el libro
-        user: { id: createFavoriteDto.userId }, // Asigna la relación con el usuario
+        book: { id: createFavoriteDto.bookId },
+        user: { id: userId }, // lo pasamos explícitamente desde el controlador
       });
 
-      // Guarda la entidad en la base de datos
       const savedFavorite = await this.favoritesRepository.save(favorite);
 
       if (!savedFavorite) {
         throw new ManagerError({
           type: 'CONFLICT',
-          message: 'favorite not created!',
+          message: 'Favorite not created!',
         });
       }
 
@@ -39,39 +37,36 @@ export class FavoritesService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<AllApiResponse<FavoriteEntity>> {
+
+  async findAll(userId: string, paginationDto: PaginationDto): Promise<AllApiResponse<FavoriteEntity>> {
     const { limit, page } = paginationDto;
     const skip = (page - 1) * limit;
+
     try {
       const [total, data] = await Promise.all([
-        this.favoritesRepository.count({ where: { isActive: true } }),
+        this.favoritesRepository.count({ where: { isActive: true, user: { id: userId } } }),
         this.favoritesRepository.find({
-          where: { isActive: true },
-          relations: ['book', 'user'], // Carga las relaciones
+          where: { isActive: true, user: { id: userId } },
+          relations: ['book'],
           take: limit,
-          skip: skip,
+          skip,
         }),
-      ]);
+      ])
 
-      const lastPage = Math.ceil(total / limit);
       return {
         status: {
           statusMsg: 'ACCEPTED',
           statusCode: 200,
           error: null,
         },
-        meta: {
-          page,
-          limit,
-          lastPage,
-          total,
-        },
+        meta: { page, limit, lastPage: Math.ceil(total / limit), total },
         data,
       };
     } catch (error) {
-      ManagerError.createSignatureError(error.message);
+      ManagerError.createSignatureError(error.message)
     }
   }
+
 
   async findOne(id: string): Promise<OneApiResponse<FavoriteEntity>> {
     try {
