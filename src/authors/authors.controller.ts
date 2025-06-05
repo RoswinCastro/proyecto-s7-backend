@@ -1,16 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { AuthorsService } from './authors.service';
-import { CreateAuthorDto } from './dto/create-author.dto';
-import { UpdateAuthorDto } from './dto/update-author.dto';
-import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseInterceptors,
+  UploadedFile,
+} from "@nestjs/common";
+import { AuthorsService } from "./authors.service";
+import { CreateAuthorDto } from "./dto/create-author.dto";
+import { UpdateAuthorDto } from "./dto/update-author.dto";
+import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
 
-@Controller('authors')
+@Controller("authors")
 export class AuthorsController {
-  constructor(private readonly authorsService: AuthorsService) { }
+  constructor(private readonly authorsService: AuthorsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('photo'))
+  @UseInterceptors(FileInterceptor("photo"))
   async create(@Body() createAuthorDto: CreateAuthorDto, @UploadedFile() file?: Express.Multer.File) {
     return this.authorsService.create(createAuthorDto, file);
   }
@@ -20,27 +31,24 @@ export class AuthorsController {
     return this.authorsService.findAll(paginationDto);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  async findOne(@Param("id") id: string) {
     return this.authorsService.findOne(id);
   }
 
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateAuthorDto: UpdateAuthorDto) {
+  @Patch(":id")
+  async update(@Param("id") id: string, @Body() updateAuthorDto: UpdateAuthorDto) {
     return this.authorsService.update(id, updateAuthorDto);
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
+  @Delete(":id")
+  async remove(@Param("id") id: string) {
     return this.authorsService.remove(id);
   }
 
-  @Post(':id/photo')
-  @UseInterceptors(FileInterceptor('file'))
-  async updatePhoto(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  @Post(":id/photo")
+  @UseInterceptors(FileInterceptor("file"))
+  async updatePhoto(@Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
     return await this.authorsService.updatePhoto(id, file);
   }
 }
