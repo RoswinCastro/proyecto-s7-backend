@@ -1,5 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-
+import { IsNumber, IsOptional, IsString, IsUUID, Max, Min } from "class-validator";
 
 export class PaginationDto {
   @IsNumber()
@@ -23,4 +22,8 @@ export class PaginationDto {
   @Min(1)
   @Max(5)
   minRating?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
