@@ -8,14 +8,19 @@ import { ManagerError } from "src/common/errors/manager.error";
 import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
 import { AllApiResponse, OneApiResponse } from "src/common/interfaces/response-api.interface";
 import { CloudinaryService } from "src/cloudinary/cloudinary.service";
+import { BooksService } from "src/books/books.service";
 
 @Injectable()
 export class AuthorsService {
   constructor(
     @InjectRepository(AuthorEntity)
     private readonly authorsRepository: Repository<AuthorEntity>,
-    private readonly cloudinaryService: CloudinaryService
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly bookService: BooksService
   ) {}
+  async getBooksByAuthor(authorId: string) {
+    return this.bookService.findByAuthorId(authorId);
+  }
 
   async create(createAuthorDto: CreateAuthorDto, file?: Express.Multer.File): Promise<AuthorEntity> {
     try {

@@ -36,6 +36,11 @@ export class AuthorsController {
   async findOne(@Param("id") id: string) {
     return this.authorsService.findOne(id);
   }
+  @PublicAccess()
+  @Get(":id/books")
+  async getBooksByAuthor(@Param("id") id: string) {
+    return this.authorsService.getBooksByAuthor(id);
+  }
 
   @Patch(":id")
   async update(@Param("id") id: string, @Body() updateAuthorDto: UpdateAuthorDto) {
