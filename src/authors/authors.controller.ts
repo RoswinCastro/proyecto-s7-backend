@@ -15,6 +15,7 @@ import { CreateAuthorDto } from "./dto/create-author.dto";
 import { UpdateAuthorDto } from "./dto/update-author.dto";
 import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { PublicAccess } from "src/auth/decorators/public.decorator";
 
 @Controller("authors")
 export class AuthorsController {
@@ -25,12 +26,12 @@ export class AuthorsController {
   async create(@Body() createAuthorDto: CreateAuthorDto, @UploadedFile() file?: Express.Multer.File) {
     return this.authorsService.create(createAuthorDto, file);
   }
-
+  @PublicAccess()
   @Get()
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.authorsService.findAll(paginationDto);
   }
-
+  @PublicAccess()
   @Get(":id")
   async findOne(@Param("id") id: string) {
     return this.authorsService.findOne(id);
@@ -40,7 +41,15 @@ export class AuthorsController {
   async update(@Param("id") id: string, @Body() updateAuthorDto: UpdateAuthorDto) {
     return this.authorsService.update(id, updateAuthorDto);
   }
-
+  @Patch("/update/:id")
+  @UseInterceptors(FileInterceptor("photo"))
+  async updateModificado(
+    @Param("id") id: string,
+    @Body() updateAuthorDto: UpdateAuthorDto,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    return this.authorsService.updateModificado(id, updateAuthorDto, file);
+  }
   @Delete(":id")
   async remove(@Param("id") id: string) {
     return this.authorsService.remove(id);
