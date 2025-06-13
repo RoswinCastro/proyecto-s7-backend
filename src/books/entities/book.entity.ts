@@ -1,70 +1,52 @@
-import { BaseEntity } from './../../common/config/base.entity';
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-import { AuthorEntity } from './../../authors/entities/author.entity';
-import { EditorialEntity } from './../../editorials/entities/editorial.entity';
-import { GenderEntity } from './../../genders/entities/gender.entity';
-import { ReviewEntity } from './../../reviews/entities/review.entity';
-import { FavoriteEntity } from './../../favorites/entities/favorite.entity';
+import { BaseEntity } from "./../../common/config/base.entity";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { AuthorEntity } from "./../../authors/entities/author.entity";
+import { EditorialEntity } from "./../../editorials/entities/editorial.entity";
+import { GenderEntity } from "./../../genders/entities/gender.entity";
+import { ReviewEntity } from "./../../reviews/entities/review.entity";
+import { FavoriteEntity } from "./../../favorites/entities/favorite.entity";
 
 @Entity({ name: "book" })
 export class BookEntity extends BaseEntity {
   @Column({ type: "varchar" })
-  title: string
+  title: string;
 
   @Column({ type: "numeric", unique: true })
-  isbn: number
+  isbn: number;
 
-  @ManyToOne(
-    () => AuthorEntity,
-    (author) => author.books,
-    { nullable: true },
-  )
+  @ManyToOne(() => AuthorEntity, (author) => author.books, { nullable: true })
   @JoinColumn({ name: "author" })
-  author?: AuthorEntity
+  author?: AuthorEntity;
 
-  @ManyToOne(
-    () => EditorialEntity,
-    (editorial) => editorial.books,
-    { nullable: true },
-  )
+  @ManyToOne(() => EditorialEntity, (editorial) => editorial.books, { nullable: true })
   @JoinColumn({ name: "editorial" })
-  editorial?: EditorialEntity
+  editorial?: EditorialEntity;
 
   @Column({ type: "numeric", nullable: true })
-  publicationDate?: number
+  publicationDate?: number;
 
-  @ManyToOne(
-    () => GenderEntity,
-    (gender) => gender.books,
-    { nullable: true },
-  )
+  @ManyToOne(() => GenderEntity, (gender) => gender.books, { nullable: true })
   @JoinColumn({ name: "gender" })
-  gender?: GenderEntity
+  gender?: GenderEntity;
 
   @Column({ type: "text", nullable: true })
-  synopsis?: string
+  synopsis?: string;
 
   @Column({ type: "varchar" })
-  file: string
+  file: string;
 
   @Column({ type: "numeric", default: 0 })
-  views: number
+  views: number;
 
   @Column({ type: "numeric", default: 0 })
-  downloads: number
+  downloads: number;
 
   @Column({ type: "numeric", default: 0, precision: 3, scale: 2 })
-  averageRating: number
+  averageRating: number;
 
-  @OneToMany(
-    () => ReviewEntity,
-    (review) => review.book,
-  )
-  reviews: ReviewEntity[]
+  @OneToMany(() => ReviewEntity, (review) => review.book)
+  reviews: ReviewEntity[];
 
-  @OneToMany(
-    () => FavoriteEntity,
-    (favorite) => favorite.book,
-  )
-  favorites: FavoriteEntity[]
+  @OneToMany(() => FavoriteEntity, (favorite) => favorite.book)
+  favorites: FavoriteEntity[];
 }

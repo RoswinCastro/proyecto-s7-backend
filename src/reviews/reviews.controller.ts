@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ReviewsService } from './reviews.service';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
-import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { ReviewsService } from "./reviews.service";
+import { CreateReviewDto } from "./dto/create-review.dto";
+import { UpdateReviewDto } from "./dto/update-review.dto";
+import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
 
-@Controller('reviews')
+@Controller("reviews")
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
@@ -18,18 +18,30 @@ export class ReviewsController {
     return this.reviewsService.findAll(paginationDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
+  @Get("filter")
+  findWithFilters(
+    @Query("userId") userId: string,
+    @Query("bookId") bookId: string,
+    @Query("limit") limit = 10,
+    @Query("offset") offset = 1
+  ) {
+    if (userId) return this.reviewsService.findByUser(userId);
+    if (bookId) return this.reviewsService.findByBook(bookId);
+    return this.reviewsService.findAll({ limit: +limit, page: +offset });
+  }
+
+  @Get(":id")
+  findOne(@Param("id") id: string) {
     return this.reviewsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {
+  @Patch(":id")
+  update(@Param("id") id: string, @Body() updateReviewDto: UpdateReviewDto) {
     return this.reviewsService.update(id, updateReviewDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
+  @Delete(":id")
+  remove(@Param("id") id: string) {
     return this.reviewsService.remove(id);
   }
 }

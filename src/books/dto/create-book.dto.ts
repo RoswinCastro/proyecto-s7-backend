@@ -1,43 +1,43 @@
-import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateBookDto {
-    @IsString()
-    @IsNotEmpty()
-    title: string
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-    @IsNumber()
-    @IsOptional()
-    isbn?: number
+  @IsNumber()
+  @IsOptional()
+  isbn?: number;
 
-    @IsString()
-    @IsOptional()
-    author?: string
+  @IsString()
+  @IsOptional()
+  author?: string;
 
-    @IsString()
-    @IsOptional()
-    editorial?: string
+  @IsString()
+  @IsOptional()
+  editorial?: string;
 
-    @IsNumber()
-    @IsOptional()
-    publicationDate?: number
+  @IsNumber()
+  @IsOptional()
+  publicationDate?: number;
 
-    @IsString()
-    @IsOptional()
-    gender?: string
+  @IsString()
+  @IsOptional()
+  gender?: string;
 
-    @IsString()
-    @IsOptional()
-    synopsis?: string
+  @IsString()
+  @IsOptional()
+  synopsis?: string;
 
-    @IsString()
-    @IsOptional()
-    file: string
+  @IsString()
+  @IsOptional()
+  file: string;
 
-    @IsNumber()
-    @IsOptional()
-    views?: number
+  @IsNumber()
+  @IsOptional()
+  views?: number;
 
-    @IsNumber()
-    @IsOptional()
-    downloads?: number
+  @IsNumber()
+  @IsOptional()
+  downloads?: number;
 }
