@@ -40,6 +40,48 @@ export class AuthorsService {
       ManagerError.createSignatureError(error.message);
     }
   }
+  async searchAuthors(paginationDto: PaginationDto & { search?: string }): Promise<AllApiResponse<AuthorEntity>> {
+    const { search } = paginationDto;
+    const page = Number(paginationDto.page) || 1;
+    const limit = Number(paginationDto.limit) || 3;
+
+    const skip = (page - 1) * limit;
+
+    try {
+      const queryBuilder = this.authorsRepository.createQueryBuilder("author").where("author.isActive = true");
+
+      if (search && search.trim() !== "") {
+        const terms = search.trim().toLowerCase().split(/\s+/);
+
+        terms.forEach((term, index) => {
+          queryBuilder.andWhere(`LOWER(author.authorName) LIKE :term${index}`, {
+            [`term${index}`]: `%${term}%`,
+          });
+        });
+      }
+
+      const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
+
+      const lastPage = Math.ceil(total / limit);
+
+      return {
+        status: {
+          statusMsg: "ACCEPTED",
+          statusCode: 200,
+          error: null,
+        },
+        meta: {
+          page,
+          limit,
+          lastPage,
+          total,
+        },
+        data,
+      };
+    } catch (error) {
+      ManagerError.createSignatureError(error.message);
+    }
+  }
 
   async findAll(paginationDto: PaginationDto): Promise<AllApiResponse<AuthorEntity>> {
     const { limit, page } = paginationDto;
