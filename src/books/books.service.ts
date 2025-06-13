@@ -105,6 +105,53 @@ export class BooksService {
       ManagerError.createSignatureError(error.message);
     }
   }
+  async findByAuthorId(authorId: string): Promise<AllApiResponse<any>> {
+    try {
+      const books = await this.bookRepository
+        .createQueryBuilder("book")
+        .leftJoinAndSelect("book.author", "author")
+        .leftJoinAndSelect("book.editorial", "editorial")
+        .leftJoinAndSelect("book.gender", "gender")
+        .where("book.author.id = :authorId", { authorId })
+        .andWhere("book.isActive = true")
+        .getMany();
+
+      const mappedBooks = books.map((book) => ({
+        id: book.id,
+        title: book.title,
+        isbn: book.isbn,
+        author: book.author?.authorName,
+        editorial: book.editorial?.editorialName,
+        gender: book.gender?.genderName,
+        publicationDate: book.publicationDate,
+        synopsis: book.synopsis,
+        file: book.file,
+        views: book.views,
+        downloads: book.downloads,
+        averageRating: book.averageRating,
+        isActive: book.isActive,
+        createdAt: book.createdAt,
+        updatedAt: book.updatedAt,
+      }));
+
+      return {
+        status: {
+          statusMsg: "ACCEPTED",
+          statusCode: 200,
+          error: null,
+        },
+        meta: {
+          page: 1,
+          limit: mappedBooks.length,
+          lastPage: 1,
+          total: mappedBooks.length,
+        },
+        data: mappedBooks,
+      };
+    } catch (error) {
+      ManagerError.createSignatureError(error.message);
+    }
+  }
 
   async SearchBook(paginationDto: PaginationDto): Promise<AllApiResponse<any>> {
     const { limit, page, search, q } = paginationDto;
@@ -232,7 +279,7 @@ export class BooksService {
         updatedData = { ...updatedData, file: uploadedFile.secure_url };
       }
 
-      const { author, editorial, gender, ...bookData } = updateBookDto;
+      const { author, editorial, gender, ...bookData } = updatedData;
       const updateData = {
         ...bookData,
         author: author ? { id: author } : undefined,

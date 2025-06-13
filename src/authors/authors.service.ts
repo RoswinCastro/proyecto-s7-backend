@@ -8,14 +8,19 @@ import { ManagerError } from "src/common/errors/manager.error";
 import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
 import { AllApiResponse, OneApiResponse } from "src/common/interfaces/response-api.interface";
 import { CloudinaryService } from "src/cloudinary/cloudinary.service";
+import { BooksService } from "src/books/books.service";
 
 @Injectable()
 export class AuthorsService {
   constructor(
     @InjectRepository(AuthorEntity)
     private readonly authorsRepository: Repository<AuthorEntity>,
-    private readonly cloudinaryService: CloudinaryService
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly bookService: BooksService
   ) {}
+  async getBooksByAuthor(authorId: string) {
+    return this.bookService.findByAuthorId(authorId);
+  }
 
   async create(createAuthorDto: CreateAuthorDto, file?: Express.Multer.File): Promise<AuthorEntity> {
     try {
@@ -31,6 +36,48 @@ export class AuthorsService {
         });
       }
       return author;
+    } catch (error) {
+      ManagerError.createSignatureError(error.message);
+    }
+  }
+  async searchAuthors(paginationDto: PaginationDto & { search?: string }): Promise<AllApiResponse<AuthorEntity>> {
+    const { search } = paginationDto;
+    const page = Number(paginationDto.page) || 1;
+    const limit = Number(paginationDto.limit) || 3;
+
+    const skip = (page - 1) * limit;
+
+    try {
+      const queryBuilder = this.authorsRepository.createQueryBuilder("author").where("author.isActive = true");
+
+      if (search && search.trim() !== "") {
+        const terms = search.trim().toLowerCase().split(/\s+/);
+
+        terms.forEach((term, index) => {
+          queryBuilder.andWhere(`LOWER(author.authorName) LIKE :term${index}`, {
+            [`term${index}`]: `%${term}%`,
+          });
+        });
+      }
+
+      const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
+
+      const lastPage = Math.ceil(total / limit);
+
+      return {
+        status: {
+          statusMsg: "ACCEPTED",
+          statusCode: 200,
+          error: null,
+        },
+        meta: {
+          page,
+          limit,
+          lastPage,
+          total,
+        },
+        data,
+      };
     } catch (error) {
       ManagerError.createSignatureError(error.message);
     }

@@ -32,9 +32,20 @@ export class AuthorsController {
     return this.authorsService.findAll(paginationDto);
   }
   @PublicAccess()
+  @Get("search")
+  async searchAuthors(@Query() paginationDto: PaginationDto & { search?: string }) {
+    return this.authorsService.searchAuthors(paginationDto);
+  }
+
+  @PublicAccess()
   @Get(":id")
   async findOne(@Param("id") id: string) {
     return this.authorsService.findOne(id);
+  }
+  @PublicAccess()
+  @Get(":id/books")
+  async getBooksByAuthor(@Param("id") id: string) {
+    return this.authorsService.getBooksByAuthor(id);
   }
 
   @Patch(":id")
