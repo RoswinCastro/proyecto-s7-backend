@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create database tables based on the entity model
 
 -- Tabla de autores
@@ -113,7 +115,7 @@ INSERT INTO gender (gender_name, description) VALUES
 
 -- Usuario admin (la contraseña debe ser hasheada en producción)
 INSERT INTO "user" (name, email, password, role) VALUES 
-('Admin', 'admin@example.com', '$2b$10$wH8QJQw1QZ1k7x2Qw1QZ1uQw1QZ1k7x2Qw1QZ1uQw1QZ1k7x2Qw1QZ1', 'ADMIN');
+('Admin', 'admin@admin.com', '$2b$12$aE5OjesA6VQMiIipk.KnherK.CX.fKXMvgQ1el52MPWfCOiFcA1/O', 'ADMIN');
 
 -- Libros de ejemplo
 INSERT INTO book (title, isbn, author, editorial, gender, synopsis, file, views, downloads) VALUES
