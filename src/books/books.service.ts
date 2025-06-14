@@ -15,10 +15,16 @@ export class BooksService {
     @InjectRepository(BookEntity)
     private readonly bookRepository: Repository<BookEntity>,
     private readonly cloudinaryService: CloudinaryService
-  ) {}
+  ) { }
 
   async create(createBookDto: CreateBookDto, file: Express.Multer.File): Promise<BookEntity> {
     try {
+      if (!file) {
+        throw new ManagerError({
+          type: "BAD_REQUEST",
+          message: "File is required!",
+        });
+      }
       const uploadedFile = await this.cloudinaryService.uploadFile(file);
 
       const { author, editorial, gender, ...bookData } = createBookDto;
