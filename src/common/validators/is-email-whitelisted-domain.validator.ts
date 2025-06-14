@@ -36,7 +36,7 @@ export function IsEmailWhitelistedDomain(validationOptions?: ValidationOptions) 
                     return WHITELISTED_DOMAINS.includes(domain);
                 },
                 defaultMessage(args: ValidationArguments) {
-                    return 'El dominio del correo electrónico no está permitido.';
+                    return 'That email domain is not permitted. Please use a domain validated by the system.';
                 },
             },
         });

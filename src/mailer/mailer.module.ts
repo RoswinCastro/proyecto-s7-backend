@@ -5,13 +5,7 @@ import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { MailerService } from './mailer.service';
 
-dotenv.config(); // Asegúrate de cargar las variables de entorno
-
-console.log('MAIL_HOST:', process.env.MAIL_HOST); // Verifica el host
-console.log('MAIL_PORT:', process.env.MAIL_PORT); // Verifica el puerto
-console.log('MAIL_USER:', process.env.MAIL_USER); // Verifica el usuario
-console.log('MAIL_PASS:', process.env.MAIL_PASSWORD); // Verifica la contraseña
-console.log('MAIL_FROM:', process.env.MAIL_FROM_EMAIL); // Verifica la contraseña
+dotenv.config();
 
 @Module({
   imports: [
