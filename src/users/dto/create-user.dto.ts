@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsStrongPassword } from "class-validator";
 import { IsEmailWhitelistedDomain } from "src/common/validators/is-email-whitelisted-domain.validator";
 
 export class CreateUserDto {
@@ -13,6 +13,7 @@ export class CreateUserDto {
 
     @IsString()
     @IsNotEmpty()
+    @IsStrongPassword()
     password: string;
 
     @IsOptional()
