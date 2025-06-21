@@ -1,44 +1,44 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from './entities/user.entity';
-import { Repository, UpdateResult } from 'typeorm';
-import { ManagerError } from 'src/common/errors/manager.error';
-import { PaginationDto } from 'src/common/dtos/pagination/pagination.dto';
-import { AllApiResponse, OneApiResponse } from 'src/common/interfaces/response-api.interface';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import * as bcrypt from 'bcrypt';
+import { Injectable } from "@nestjs/common";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { UserEntity } from "./entities/user.entity";
+import { Repository, UpdateResult } from "typeorm";
+import { ManagerError } from "src/common/errors/manager.error";
+import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
+import { AllApiResponse, OneApiResponse } from "src/common/interfaces/response-api.interface";
+import { CloudinaryService } from "../cloudinary/cloudinary.service";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    private readonly cloudinaryService: CloudinaryService,
-  ) { }
+    private readonly cloudinaryService: CloudinaryService
+  ) {}
 
   async create(createUserDto: CreateUserDto, file?: Express.Multer.File): Promise<UserEntity> {
     try {
       const existingUser = await this.findOneByEmail(createUserDto.email);
       if (existingUser) {
         throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'A user with this email already exists.',
-        })
+          type: "CONFLICT",
+          message: "A user with this email already exists.",
+        });
       }
 
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 12)
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
 
-      const profilePhoto = await this.cloudinaryService.uploadProfilePhoto(file)
+      const profilePhoto = await this.cloudinaryService.uploadProfilePhoto(file);
 
       const userData = { ...createUserDto, password: hashedPassword, profilePhoto };
 
       const user = await this.userRepository.save(userData);
       if (!user) {
         throw new ManagerError({
-          type: 'CONFLICT',
-          message: 'user not created!',
+          type: "CONFLICT",
+          message: "user not created!",
         });
       }
       return user;
@@ -53,19 +53,14 @@ export class UsersService {
     try {
       const [total, data] = await Promise.all([
         this.userRepository.count({ where: { isActive: true } }),
-        this.userRepository
-          .createQueryBuilder('user')
-          .where({ isActive: true })
-          .take(limit)
-          .skip(skip)
-          .getMany(),
+        this.userRepository.createQueryBuilder("user").where({ isActive: true }).take(limit).skip(skip).getMany(),
       ]);
 
       const lastPage = Math.ceil(total / limit);
 
       return {
         status: {
-          statusMsg: 'ACCEPTED',
+          statusMsg: "ACCEPTED",
           statusCode: 200,
           error: null,
         },
@@ -89,14 +84,14 @@ export class UsersService {
       });
       if (!user) {
         throw new ManagerError({
-          type: 'BAD_REQUEST',
-          message: 'User not found',
+          type: "BAD_REQUEST",
+          message: "User not found",
         });
       }
 
       return {
         status: {
-          statusMsg: 'ACCEPTED',
+          statusMsg: "ACCEPTED",
           statusCode: 200,
           error: null,
         },
@@ -115,7 +110,7 @@ export class UsersService {
       return user;
     } catch (error) {
       throw new ManagerError({
-        type: 'INTERNAL_SERVER_ERROR',
+        type: "INTERNAL_SERVER_ERROR",
         message: error.message,
       });
     }
@@ -126,8 +121,8 @@ export class UsersService {
       const user = await this.userRepository.update({ id }, updateUserDto);
       if (user.affected === 0) {
         throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'user not found!',
+          type: "NOT_FOUND",
+          message: "user not found!",
         });
       }
       return user;
@@ -141,8 +136,8 @@ export class UsersService {
       const user = await this.userRepository.update({ id }, { isActive: false });
       if (user.affected === 0) {
         throw new ManagerError({
-          type: 'NOT_FOUND',
-          message: 'user not found!',
+          type: "NOT_FOUND",
+          message: "user not found!",
         });
       }
       return user;
@@ -175,7 +170,7 @@ export class UsersService {
     if (!user.lastResetPasswordAttempt || user.lastResetPasswordAttempt < oneHourAgo) {
       await this.userRepository.update(user.id, {
         resetPasswordAttempts: 0,
-        lastResetPasswordAttempt: now
+        lastResetPasswordAttempt: now,
       });
       return { canRequest: true };
     }
@@ -186,7 +181,7 @@ export class UsersService {
 
       return {
         canRequest: false,
-        message: `You have exceeded the attempt limit. Please wait ${remainingMinutes} minutes.`
+        message: `You have exceeded the attempt limit. Please wait ${remainingMinutes} minutes.`,
       };
     }
 
@@ -199,7 +194,7 @@ export class UsersService {
       .update(UserEntity)
       .set({
         resetPasswordAttempts: () => "resetPasswordAttempts + 1",
-        lastResetPasswordAttempt: new Date()
+        lastResetPasswordAttempt: new Date(),
       })
       .where("email = :email", { email })
       .execute();
@@ -209,7 +204,7 @@ export class UsersService {
     try {
       const user = await this.userRepository.findOne({ where: { id } });
       if (!user) {
-        throw new Error('User not found!');
+        throw new Error("User not found!");
       }
 
       if (user.profilePhoto) {
@@ -227,8 +222,8 @@ export class UsersService {
   }
 
   private extractPublicId(photoUrl: string): string {
-    const parts = photoUrl.split('/');
+    const parts = photoUrl.split("/");
     const lastPart = parts[parts.length - 1];
-    return lastPart.split('.')[0];
+    return lastPart.split(".")[0];
   }
 }

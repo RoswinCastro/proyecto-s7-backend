@@ -2,21 +2,21 @@ import { IsNotEmpty, IsOptional, IsString, IsStrongPassword } from "class-valida
 import { IsEmailWhitelistedDomain } from "src/common/validators/is-email-whitelisted-domain.validator";
 
 export class CreateUserDto {
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-    @IsString()
-    @IsNotEmpty()
-    @IsEmailWhitelistedDomain()
-    email: string;
+  @IsString()
+  @IsNotEmpty()
+  @IsEmailWhitelistedDomain()
+  email: string;
 
-    @IsString()
-    @IsNotEmpty()
-    @IsStrongPassword()
-    password: string;
+  @IsString()
+  @IsNotEmpty()
+  @IsStrongPassword()
+  password: string;
 
-    @IsOptional()
-    @IsString()
-    profilePhoto?: string;
+  @IsOptional()
+  @IsString()
+  profilePhoto?: string;
 }

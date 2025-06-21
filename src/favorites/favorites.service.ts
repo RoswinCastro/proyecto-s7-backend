@@ -7,6 +7,7 @@ import { UpdateFavoriteDto } from "./dto/update-favorite.dto";
 import { PaginationDto } from "src/common/dtos/pagination/pagination.dto";
 import { AllApiResponse, OneApiResponse } from "src/common/interfaces/response-api.interface";
 import { ManagerError } from "src/common/errors/manager.error";
+import { ILike } from "typeorm";
 
 @Injectable()
 export class FavoritesService {
@@ -65,34 +66,79 @@ export class FavoritesService {
       ManagerError.createSignatureError(error.message);
     }
   }
-  async findAuthors(userId: string, paginationDto: PaginationDto): Promise<AllApiResponse<FavoriteEntity>> {
-    const { limit, page } = paginationDto;
+  async findAuthors(
+    userId: string,
+    paginationDto: PaginationDto & { q?: string }
+  ): Promise<AllApiResponse<FavoriteEntity>> {
+    const { limit, page, q } = paginationDto;
     const skip = (page - 1) * limit;
 
-    try {
-      const [total, data] = await Promise.all([
-        this.favoritesRepository.count({ where: { isActive: true, user: { id: userId } } }),
-        this.favoritesRepository.find({
-          where: { isActive: true, user: { id: userId } },
-          relations: ["book", "book.author"],
+    const baseWhere = {
+      isActive: true,
+      user: { id: userId },
+    };
 
+    let data: FavoriteEntity[] = [];
+    let total = 0;
+
+    if (q?.trim()) {
+      const query = `%${q.trim().toLowerCase()}%`;
+
+      const [byTitle, byAuthor] = await Promise.all([
+        this.favoritesRepository.findAndCount({
+          where: {
+            ...baseWhere,
+            book: { title: ILike(query) },
+          },
+          relations: ["book", "book.author"],
+          take: limit,
+          skip,
+        }),
+        this.favoritesRepository.findAndCount({
+          where: {
+            ...baseWhere,
+            book: { author: { authorName: ILike(query) } },
+          },
+          relations: ["book", "book.author"],
           take: limit,
           skip,
         }),
       ]);
 
-      return {
-        status: {
-          statusMsg: "ACCEPTED",
-          statusCode: 200,
-          error: null,
-        },
-        meta: { page, limit, lastPage: Math.ceil(total / limit), total },
-        data,
-      };
-    } catch (error) {
-      ManagerError.createSignatureError(error.message);
+      // unir resultados sin duplicados (por ID)
+      const combined = [...byTitle[0], ...byAuthor[0]];
+      const unique = Array.from(new Map(combined.map((f) => [f.id, f])).values());
+
+      data = unique.slice(0, limit); // paginar en memoria
+      total = new Set([...byTitle[0], ...byAuthor[0]].map((f) => f.id)).size;
+    } else {
+      [total, data] = await Promise.all([
+        this.favoritesRepository.count({
+          where: baseWhere,
+        }),
+        this.favoritesRepository.find({
+          where: baseWhere,
+          relations: ["book", "book.author"],
+          take: limit,
+          skip,
+        }),
+      ]);
     }
+
+    return {
+      status: {
+        statusMsg: "ACCEPTED",
+        statusCode: 200,
+        error: null,
+      },
+      meta: {
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
+        total,
+      },
+      data,
+    };
   }
 
   async findOne(id: string): Promise<OneApiResponse<FavoriteEntity>> {
